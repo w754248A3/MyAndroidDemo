@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">HelloWorld</string>
-    <string name="hello_world">hello world</string>
+    <string name="app_name">Cloud Storage Provider</string>
+    <string name="service_running">Storage service is running</string>
 </resources>
