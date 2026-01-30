@@ -1,19 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center_horizontal">
 
     <TextView
+        android:id="@+id/status_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/service_running"
         android:textSize="18sp"
-        android:padding="16dp"
-        android:gravity="center"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:padding="8dp"
+        android:gravity="center" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#CCCCCC"
+        android:layout_marginVertical="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="File Copy Utility"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/btn_select_source"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Source File" />
+
+    <TextView
+        android:id="@+id/source_path_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Source: None"
+        android:textSize="12sp"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btn_select_target"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Target Directory" />
+
+    <TextView
+        android:id="@+id/target_path_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Target: None"
+        android:textSize="12sp"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btn_copy"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Execute Copy"
+        android:enabled="false" />
+
+    <TextView
+        android:id="@+id/copy_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#FF0000"
+        android:textSize="14sp"
+        android:layout_marginTop="8dp"
+        android:gravity="center" />
+
+</LinearLayout>
