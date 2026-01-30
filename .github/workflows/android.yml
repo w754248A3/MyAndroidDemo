@@ -27,11 +27,21 @@ jobs:
         gradle wrapper --gradle-version 8.2
         chmod +x gradlew
 
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
 
-    - name: Upload APK
+    - name: Sign APK
+      uses: r0adkll/sign-android-release@v1
+      id: sign_app
+      with:
+        releaseDirectory: app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+        alias: ${{ secrets.ALIAS }}
+        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+    - name: Upload Signed APK
       uses: actions/upload-artifact@v4
       with:
-        name: my-hello-world-apk
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: my-hello-world-signed-apk
+        path: ${{ steps.sign_app.outputs.signedReleaseFile }}
