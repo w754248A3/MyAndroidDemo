@@ -25,7 +25,7 @@
 1. **GitHub Actions**: 每次推送到 `main` 分支都会触发自动构建。
 2. **自动发布**: 
    - 推送到 `main` 分支会自动更新 `latest` Release 页面。
-   - 推送版本标签（如 `v1.2`）会创建一个正式的 Release。
+   - 推送版本标签（如 `v1.3`）会创建一个正式的 Release。
 3. **下载**: 请前往项目的 [Releases](../../releases) 页面下载签署后的 APK。
 
 ## 使用说明
