@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.view.View;
 import android.widget.Button;
@@ -16,6 +17,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.documentfile.provider.DocumentFile;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -91,42 +94,75 @@ public class MainActivity extends AppCompatActivity {
 
         new Thread(() -> {
             boolean success = false;
-            String errorMessage = "";
-            try {
-                String fileName = getFileName(sourceUri);
-                DocumentFile targetDir = DocumentFile.fromTreeUri(this, targetTreeUri);
-                
-                // Get mime type
-                String mimeType = getContentResolver().getType(sourceUri);
-                if (mimeType == null) mimeType = "application/octet-stream";
+            String statusMsg = "";
+            String copyMethod = "Stream";
 
-                DocumentFile newFile = targetDir.createFile(mimeType, fileName);
-                if (newFile != null) {
-                    try (InputStream is = getContentResolver().openInputStream(sourceUri);
-                         OutputStream os = getContentResolver().openOutputStream(newFile.getUri())) {
-                        byte[] buffer = new byte[8192];
-                        int read;
-                        while ((read = is.read(buffer)) != -1) {
-                            os.write(buffer, 0, read);
+            try {
+                // 1. 尝试使用 DocumentsContract.copyDocument (高效/CoW 方案)
+                // 仅当源和目标属于同一个存储提供者时有效
+                if (sourceUri.getAuthority().equals(targetTreeUri.getAuthority())) {
+                    try {
+                        // 对于从 ACTION_OPEN_DOCUMENT_TREE 获取的 Uri，需要获取其文档 ID 以构建父目录的 Document Uri
+                        String treeId = DocumentsContract.getTreeDocumentId(targetTreeUri);
+                        Uri targetParentUri = DocumentsContract.buildDocumentUriUsingTree(targetTreeUri, treeId);
+                        
+                        Uri result = DocumentsContract.copyDocument(getContentResolver(), sourceUri, targetParentUri);
+                        if (result != null) {
+                            success = true;
+                            copyMethod = "Native (Optimized/CoW)";
                         }
-                        success = true;
+                    } catch (UnsupportedOperationException e) {
+                        // Provider 不支持原生复制，回退到流式传输
+                    } catch (Exception e) {
+                        // 记录异常并尝试回退
                     }
-                } else {
-                    errorMessage = "Could not create target file";
                 }
+
+                // 2. 如果原生复制未执行或失败，执行传统的流式传输
+                if (!success) {
+                    String fileName = getFileName(sourceUri);
+                    DocumentFile targetDir = DocumentFile.fromTreeUri(this, targetTreeUri);
+                    
+                    // 获取 MIME 类型
+                    String mimeType = getContentResolver().getType(sourceUri);
+                    if (mimeType == null) mimeType = "application/octet-stream";
+
+                    DocumentFile newFile = targetDir.createFile(mimeType, fileName);
+                    if (newFile != null) {
+                        try (InputStream is = getContentResolver().openInputStream(sourceUri);
+                             OutputStream os = getContentResolver().openOutputStream(newFile.getUri())) {
+                            byte[] buffer = new byte[65536]; // 64KB 缓冲区
+                            int read;
+                            while ((read = is.read(buffer)) != -1) {
+                                os.write(buffer, 0, read);
+                            }
+                            success = true;
+                            copyMethod = "Standard Stream";
+                        }
+                    } else {
+                        throw new IOException("Could not create target file in the selected directory");
+                    }
+                }
+                
+                statusMsg = "Copy Successful! (" + copyMethod + ")";
+
+            } catch (SecurityException e) {
+                statusMsg = "Error: Permission denied. " + e.getMessage();
+            } catch (FileNotFoundException e) {
+                statusMsg = "Error: File or path not found.";
+            } catch (IOException e) {
+                statusMsg = "Error: IO failure. " + e.getMessage();
             } catch (Exception e) {
-                errorMessage = e.getMessage();
+                statusMsg = "Unexpected Error: " + e.toString();
             }
 
             final boolean finalSuccess = success;
-            final String finalError = errorMessage;
+            final String finalMsg = statusMsg;
             runOnUiThread(() -> {
                 btnCopy.setEnabled(true);
+                copyStatus.setText(finalMsg);
                 if (finalSuccess) {
-                    copyStatus.setText("Copy Successful!");
                     Toast.makeText(this, "File copied successfully", Toast.LENGTH_SHORT).show();
-                } else {
-                    copyStatus.setText("Error: " + finalError);
                 }
             });
         }).start();
