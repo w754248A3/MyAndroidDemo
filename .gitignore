@@ -1,0 +1,42 @@
+# Built artifacts
+bin/
+gen/
+out/
+build/
+.gradle/
+
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+/captures/
+.externalNativeBuild/
+.cxx/
+cmake-build-debug/
+cmake-build-release/
+
+# Local configuration file (contains path to Android SDK)
+local.properties
+
+# Log files
+*.log
+
+# Android Profiler
+*.hprof
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Gradle files
+gradlew
+gradlew.bat
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+.trae/
+# Secrets
+signing.properties
+*.keystore
+*.jks
+google-services.json
