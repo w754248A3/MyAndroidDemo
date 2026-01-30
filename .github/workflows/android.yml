@@ -16,13 +16,15 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: 8.2
 
     - name: Generate Gradle Wrapper
       run: |
-        if [ ! -f gradlew ]; then
-          gradle wrapper --gradle-version 8.1
-        fi
+        gradle wrapper --gradle-version 8.2
         chmod +x gradlew
 
     - name: Build with Gradle
