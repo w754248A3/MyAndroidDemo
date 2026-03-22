@@ -20,6 +20,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -140,6 +141,8 @@ public class MainActivity extends AppCompatActivity {
                     throw new FileNotFoundException("Target directory not found");
                 }
 
+                validateCopyDestination(sourceDocument, targetDir);
+
                 if (sourceDocument.isFile() && canUseNativeCopy(sourceUri, targetTreeUri)) {
                     try {
                         String treeId = DocumentsContract.getTreeDocumentId(targetTreeUri);
@@ -207,12 +210,17 @@ public class MainActivity extends AppCompatActivity {
                 throw new IOException("Source directory name is missing");
             }
 
-            DocumentFile destinationDir = findFile(targetDir, directoryName);
+            String targetDirectoryName = directoryName;
+            DocumentFile destinationDir = findFile(targetDir, targetDirectoryName);
+            if (isSameDocument(destinationDir, source)) {
+                targetDirectoryName = buildUniqueCopyName(targetDir, directoryName);
+                destinationDir = null;
+            }
             if (destinationDir == null) {
-                destinationDir = targetDir.createDirectory(directoryName);
+                destinationDir = targetDir.createDirectory(targetDirectoryName);
             }
             if (destinationDir == null || !destinationDir.isDirectory()) {
-                throw new IOException("Could not create target directory: " + directoryName);
+                throw new IOException("Could not create target directory: " + targetDirectoryName);
             }
 
             for (DocumentFile child : source.listFiles()) {
@@ -238,20 +246,25 @@ public class MainActivity extends AppCompatActivity {
             mimeType = "application/octet-stream";
         }
 
-        DocumentFile existingFile = findFile(targetDir, fileName);
-        if (existingFile != null && existingFile.exists()) {
-            existingFile.delete();
+        String targetFileName = fileName;
+        DocumentFile existingFile = findFile(targetDir, targetFileName);
+        if (isSameDocument(existingFile, sourceFile)) {
+            targetFileName = buildUniqueCopyName(targetDir, fileName);
+            existingFile = null;
+        }
+        if (existingFile != null && existingFile.exists() && !existingFile.delete()) {
+            throw new IOException("Could not replace existing file: " + targetFileName);
         }
 
-        DocumentFile newFile = targetDir.createFile(mimeType, fileName);
+        DocumentFile newFile = targetDir.createFile(mimeType, targetFileName);
         if (newFile == null) {
-            throw new IOException("Could not create target file in the selected directory: " + fileName);
+            throw new IOException("Could not create target file in the selected directory: " + targetFileName);
         }
 
         try (InputStream is = getContentResolver().openInputStream(sourceFile.getUri());
              OutputStream os = getContentResolver().openOutputStream(newFile.getUri())) {
             if (is == null || os == null) {
-                throw new IOException("Could not open source or target stream for: " + fileName);
+                throw new IOException("Could not open source or target stream for: " + targetFileName);
             }
             byte[] buffer = new byte[65536];
             int read;
@@ -260,6 +273,89 @@ public class MainActivity extends AppCompatActivity {
             }
             os.flush();
         }
+    }
+
+    private void validateCopyDestination(DocumentFile sourceDocument, DocumentFile targetDir) throws IOException {
+        if (!sourceDocument.isDirectory()) {
+            return;
+        }
+
+        if (isSameDocument(sourceDocument, targetDir)) {
+            throw new IOException("Cannot copy a folder into itself");
+        }
+
+        if (isDocumentIdDescendant(sourceDocument.getUri(), targetDir.getUri())) {
+            throw new IOException("Cannot copy a folder into one of its subfolders");
+        }
+    }
+
+    private boolean isDocumentIdDescendant(Uri sourceUri, Uri candidateUri) {
+        if (sourceUri == null || candidateUri == null) {
+            return false;
+        }
+        if (!Objects.equals(sourceUri.getAuthority(), candidateUri.getAuthority())) {
+            return false;
+        }
+
+        String sourceDocumentId = getComparableDocumentId(sourceUri);
+        String candidateDocumentId = getComparableDocumentId(candidateUri);
+        if (sourceDocumentId == null || candidateDocumentId == null) {
+            return false;
+        }
+
+        return candidateDocumentId.startsWith(sourceDocumentId + "/");
+    }
+
+    private String getComparableDocumentId(Uri uri) {
+        try {
+            if (DocumentsContract.isTreeUri(uri)) {
+                return DocumentsContract.getTreeDocumentId(uri);
+            }
+            return DocumentsContract.getDocumentId(uri);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private boolean isSameDocument(DocumentFile first, DocumentFile second) {
+        if (first == null || second == null) {
+            return false;
+        }
+        return isSameDocument(first.getUri(), second.getUri());
+    }
+
+    private boolean isSameDocument(Uri firstUri, Uri secondUri) {
+        if (firstUri == null || secondUri == null) {
+            return false;
+        }
+        if (firstUri.equals(secondUri)) {
+            return true;
+        }
+        if (!Objects.equals(firstUri.getAuthority(), secondUri.getAuthority())) {
+            return false;
+        }
+
+        String firstDocumentId = getComparableDocumentId(firstUri);
+        String secondDocumentId = getComparableDocumentId(secondUri);
+        return firstDocumentId != null && firstDocumentId.equals(secondDocumentId);
+    }
+
+    private String buildUniqueCopyName(DocumentFile directory, String originalName) {
+        String baseName = originalName;
+        String extension = "";
+        int extensionIndex = originalName.lastIndexOf('.');
+        if (extensionIndex > 0) {
+            baseName = originalName.substring(0, extensionIndex);
+            extension = originalName.substring(extensionIndex);
+        }
+
+        String candidateName = baseName + " (copy)" + extension;
+        int duplicateIndex = 2;
+        while (findFile(directory, candidateName) != null) {
+            candidateName = baseName + " (copy " + duplicateIndex + ")" + extension;
+            duplicateIndex++;
+        }
+        return candidateName;
     }
 
     private DocumentFile findFile(DocumentFile directory, String name) {
