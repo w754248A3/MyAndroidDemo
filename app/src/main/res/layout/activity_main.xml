@@ -24,16 +24,23 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="File Copy Utility"
+        android:text="File & Folder Copy Utility"
         android:textStyle="bold"
         android:textSize="16sp"
         android:layout_marginBottom="8dp"/>
 
     <Button
-        android:id="@+id/btn_select_source"
+        android:id="@+id/btn_select_source_file"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Select Source File" />
+
+    <Button
+        android:id="@+id/btn_select_source_directory"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Select Source Folder" />
 
     <TextView
         android:id="@+id/source_path_text"
