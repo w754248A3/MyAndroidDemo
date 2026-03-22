@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
                     copyMethod = sourceDocument.isDirectory() ? "Recursive Stream" : "Standard Stream";
                 }
 
-                statusMsg = "Copy Successful! (" + copyMethod + ")";
+                statusMsg = "Copy Successful! (" + copyMethod + ") Source kept intact.";
 
             } catch (SecurityException e) {
                 statusMsg = "Error: Permission denied. " + e.getMessage();
@@ -184,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
                 btnCopy.setEnabled(true);
                 copyStatus.setText(finalMsg);
                 if (finalSuccess) {
-                    Toast.makeText(this, "Item copied successfully", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Item copied successfully; source was not deleted", Toast.LENGTH_SHORT).show();
                 }
             });
         }).start();
@@ -252,6 +252,7 @@ public class MainActivity extends AppCompatActivity {
             targetFileName = buildUniqueCopyName(targetDir, fileName);
             existingFile = null;
         }
+        // Only replace an existing target file when needed; the source file is always preserved.
         if (existingFile != null && existingFile.exists() && !existingFile.delete()) {
             throw new IOException("Could not replace existing file: " + targetFileName);
         }
